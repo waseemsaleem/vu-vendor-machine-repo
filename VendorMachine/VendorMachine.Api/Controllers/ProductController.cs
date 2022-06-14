@@ -95,14 +95,14 @@ namespace VendorMachine.Api.Controllers
         }
 
         [HttpPost("buy")]
-        public async Task<IActionResult> Buy(string productId, int amount)
+        public async Task<IActionResult> Buy(string productId, int quantity)
         {
             var roleNameVm = (UserRoleNameVM)HttpContext.Items["User"];
             if (roleNameVm != null && roleNameVm.RoleName != RoleConstants.Buyer)
                 return Unauthorized(new { message = "Unauthorized" });
 
             string userId = User.Claims.First(x => x.Type.Equals(GlobalHelpers.Constants.c_userId)).Value;
-            GenericResponse result = await _productService.BuyProduct(productId, amount, userId);
+            GenericResponse result = await _productService.BuyProduct(productId, quantity, userId);
             return Ok(result);
         }
     }

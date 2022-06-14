@@ -77,8 +77,7 @@ namespace VendorMachine.Core.Services
                     throw new Exception("User must have some deposit money to purchase products");
                 }
 
-                var res = await GetProduct(productId);
-                var product = (ProductVM)res.Reponse;
+                var product= await _context.Products.FindAsync(productId);
                 if (quantity > product.AmountAvailable)
                 {
                     throw new Exception("Requested productService amount is not available to buy.");
@@ -93,8 +92,10 @@ namespace VendorMachine.Core.Services
                 user.Deposit = user.Deposit - productCost;
                 product.AmountAvailable = product.AmountAvailable - quantity;
                 await _userService.UpdateUser(user.UserId, user);
-                await UpdateProduct(product.ProductId, product);
-                var Response = new BuyProductVM
+                _context.Products.Update(product);
+                await _context.SaveChangesAsync();
+
+                var response = new BuyProductVM
                 {
                     Product = new ProductVM
                     {
@@ -104,7 +105,7 @@ namespace VendorMachine.Core.Services
                     TotalSpent = productCost,
                     Change = Constants.amounts.Any(x => x.Equals(user.Deposit)) ? user.Deposit : 0
                 };
-                return ResponseHelper.SuccessResponse("Buy Product successfully", Response);
+                return ResponseHelper.SuccessResponse("Buy Product successfully", response);
             }
             catch (Exception ex)
             {
@@ -163,8 +164,10 @@ namespace VendorMachine.Core.Services
             try
             {
                 var product = _context.Products.Find(productModel.ProductId);
-                //_context.Entry(product).State = EntityState.Detached;
-                product.ProductName = productModel.ProductName; //_productAdapter.ToProductModel(productModel, product);
+                var sellerId = product.SellerId;
+                _context.Entry(product).State = EntityState.Detached;
+                product = _productAdapter.ToProductModel(productModel);
+                product.SellerId = sellerId;
                 _context.Products.Remove(product);
                 _context.Products.Update(product);
                 await _context.SaveChangesAsync();
